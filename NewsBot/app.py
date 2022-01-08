@@ -17,8 +17,10 @@ from botbuilder.schema import Activity, ActivityTypes
 
 from bot import MyBot
 from config import DefaultConfig
+from ContactLUIS import ContactLUIS
 
 CONFIG = DefaultConfig()
+contact_LUIS = ContactLUIS(CONFIG)
 
 # Create adapter.
 # See https://aka.ms/about-bot-adapter to learn more about how bots work.
@@ -57,7 +59,7 @@ async def on_error(context: TurnContext, error: Exception):
 ADAPTER.on_turn_error = on_error
 
 # Create the Bot
-BOT = MyBot()
+BOT = MyBot(contact_LUIS)
 
 
 # Listen for incoming requests on /api/messages
