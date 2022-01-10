@@ -10,14 +10,14 @@ from aiohttp.web import Request, Response, json_response
 from botbuilder.core import (
     BotFrameworkAdapterSettings,
     TurnContext,
-    BotFrameworkAdapter,
+    BotFrameworkAdapter, MemoryStorage, UserState,
 )
 from botbuilder.core.integration import aiohttp_error_middleware
 from botbuilder.schema import Activity, ActivityTypes
 
-from bot import MyBot
+from bots import NewsBot
+from help_modules import ContactLUIS
 from config import DefaultConfig
-from ContactLUIS import ContactLUIS
 
 CONFIG = DefaultConfig()
 contact_LUIS = ContactLUIS(CONFIG)
@@ -57,9 +57,11 @@ async def on_error(context: TurnContext, error: Exception):
 
 
 ADAPTER.on_turn_error = on_error
+MEMORY = MemoryStorage()
+USER_STATE = UserState(MEMORY)
 
 # Create the Bot
-BOT = MyBot(contact_LUIS)
+BOT = NewsBot(contact_LUIS, USER_STATE)
 
 
 # Listen for incoming requests on /api/messages
