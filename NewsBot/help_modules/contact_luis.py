@@ -1,7 +1,7 @@
 from botbuilder.ai.luis import LuisApplication, LuisRecognizer
 from botbuilder.core import Recognizer, RecognizerResult, TurnContext
 
-from ProgettoCloudComputing_NewsBot.NewsBot.config import DefaultConfig
+from config import DefaultConfig
 
 
 class ContactLUIS(Recognizer):
