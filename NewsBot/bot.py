@@ -1,7 +1,10 @@
 # Copyright (c) Microsoft Corporation. All rights reserved.
 # Licensed under the MIT License.
+import asyncio
 import os
+import threading
 from pprint import pprint
+from threading import Thread
 
 from botbuilder.core import ActivityHandler, TurnContext
 from botbuilder.schema import ChannelAccount, Activity, ActivityTypes
@@ -35,11 +38,6 @@ class MyBot(ActivityHandler):
                     else None
                 )
 
-                await turn_context.send_activities([
-                    Activity(type=ActivityTypes.typing),
-                    Activity(type="delay", value=3000),
-                ])
-
                 if intent == "NotizieBySoggetto":
                     result = recognizer_result.entities.get('$instance')
                     result = result.get('SoggettoNotizia')
@@ -47,15 +45,15 @@ class MyBot(ActivityHandler):
                     soggetto_notizia = result.get("text")
                     print(result)
 
-                    response = requests.get(self._config.NEWS_BY_SUBJECT_FUNCTION_URL, {"subject": soggetto_notizia})
-                    response.raise_for_status()
-                    notizie = dict(response.json())
+                    def run_async_function(function):
+                        loop = asyncio.new_event_loop()
+                        asyncio.set_event_loop(loop=loop)
+                        loop.run_until_complete(function)
+                        loop.close()
 
-                    message = "Ecco cosa ho trovato:\n\n"
-                    for notizia in notizie.keys():
-                        message += notizia + " " + notizie[notizia] + "\n\n"
-
-                    await turn_context.send_activity(f"{message}")
+                    thread = threading.Thread(target=run_async_function, args=(self.send_news(turn_context, soggetto_notizia), ))
+                    thread.start()
+                    await turn_context.send_activity(Activity(type=ActivityTypes.typing))
 
             except Exception as exception:
                 print("eccezzione")
@@ -71,3 +69,12 @@ class MyBot(ActivityHandler):
         for member_added in members_added:
             if member_added.id != turn_context.activity.recipient.id:
                 await turn_context.send_activity("Hello and welcome!")
+
+    async def send_news(self, context: TurnContext, soggetto_notizia):
+        response = requests.get(self._config.NEWS_BY_SUBJECT_FUNCTION_URL, {"subject": soggetto_notizia})
+        response.raise_for_status()
+        notizie = dict(response.json())
+
+        await context.send_activity(f"Ecco cosa ho trovato riguardo \"{soggetto_notizia}\"")
+        for nome in notizie.keys():
+            await context.send_activity(nome + "\n\n" + notizie[nome])
