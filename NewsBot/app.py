@@ -10,17 +10,18 @@ from aiohttp.web import Request, Response, json_response
 from botbuilder.core import (
     BotFrameworkAdapterSettings,
     TurnContext,
-    BotFrameworkAdapter, MemoryStorage, UserState,
+    BotFrameworkAdapter, MemoryStorage, UserState, ConversationState
 )
 from botbuilder.core.integration import aiohttp_error_middleware
 from botbuilder.schema import Activity, ActivityTypes
 
 from bots import NewsBot
+from dialogs.ClickbaitDialog import ClickbaitDialog
 from help_modules import ContactLUIS
 from config import DefaultConfig
 
 CONFIG = DefaultConfig()
-contact_LUIS = ContactLUIS(CONFIG)
+CONTACT_LUIS = ContactLUIS(CONFIG)
 
 # Create adapter.
 # See https://aka.ms/about-bot-adapter to learn more about how bots work.
@@ -58,10 +59,12 @@ async def on_error(context: TurnContext, error: Exception):
 
 ADAPTER.on_turn_error = on_error
 MEMORY = MemoryStorage()
+CONVERSATION_STATE = ConversationState(MEMORY)
 USER_STATE = UserState(MEMORY)
+CLICKBAIT_DIALOG = ClickbaitDialog()
 
 # Create the Bot
-BOT = NewsBot(contact_LUIS, USER_STATE)
+BOT = NewsBot(USER_STATE, CONVERSATION_STATE, contact_LUIS, CLICKBAIT_DIALOG)
 
 
 # Listen for incoming requests on /api/messages

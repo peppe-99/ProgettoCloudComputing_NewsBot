@@ -1,14 +1,15 @@
-from botbuilder.core import ActivityHandler, TurnContext, MessageFactory, UserState
+from botbuilder.core import ActivityHandler, TurnContext, MessageFactory, UserState, ConversationState
 from botbuilder.schema import ChannelAccount, Activity, ActivityTypes
-from help_modules import ContactLUIS, WelcomeUserState, help_function
+from help_modules import ContactLUIS, WelcomeUserState, help_function, DialogHelper
 from config import DefaultConfig
 
 import requests
 from threading import Thread
+from dialogs.ClickbaitDialog import ClickbaitDialog
 
 
 class NewsBot(ActivityHandler):
-    def __init__(self, luis_recognizer: ContactLUIS, user_state: UserState):
+    def __init__(self, user_state: UserState, conversation_state: ConversationState, luis_recognizer: ContactLUIS, clickbait_dialog: ClickbaitDialog):
         self.HELLO_MESSAGE = "Ciao sono NewsBot. Come posso esserti d\'aiuto?"
         self.HELP_MESSAGE = "Sono ancora in fase di sviluppo, per ora ecco cosa posso fare:\n\n" \
                             "Fornirti notizie su ciò che desideri. Ad esempio, prova a dire \"Vorrei delle notizie sui vaccini\""
@@ -16,13 +17,17 @@ class NewsBot(ActivityHandler):
 
         self._user_state = user_state
         self.user_state_accessor = self._user_state.create_property("WelcomeUserState")
+        self._conversation_state = conversation_state
         self._luis_recognizer = luis_recognizer
+        self._clickbait_dialog = clickbait_dialog
         self._config = DefaultConfig()
+        self.calls_luis = True
 
     async def on_turn(self, turn_context: TurnContext):
         await super().on_turn(turn_context)
 
         await self._user_state.save_changes(turn_context)
+        await self._conversation_state.save_changes(turn_context)
 
     async def on_message_activity(self, turn_context: TurnContext):
         welcome_user_state = await self.user_state_accessor.get(turn_context, WelcomeUserState)
@@ -33,12 +38,24 @@ class NewsBot(ActivityHandler):
 
         if self._luis_recognizer.is_configured:
             try:
-                recognizer_result = await self._luis_recognizer.recognize(turn_context)
+                intent = None
+                if self.calls_luis:
+                    recognizer_result = await self._luis_recognizer.recognize(turn_context)
 
-                intent = help_function.get_intent(recognizer_result)
-                print(intent)
+                    intent = help_function.get_intent(recognizer_result)
+                    print(intent)
 
-                if intent == "NotizieBySoggetto":
+                if not self.calls_luis or intent == "Clickbait":
+                    self.calls_luis = False
+                    await DialogHelper.run_dialog(
+                        self._clickbait_dialog,
+                        turn_context,
+                        self._conversation_state.create_property("DialogState")
+                    )
+                    if self._clickbait_dialog.is_finished:
+                        self.calls_luis = True
+
+                elif intent == "NotizieBySoggetto":
                     result = recognizer_result.entities.get('$instance')
                     result = result.get('SoggettoNotizia')
                     result = result[0]
