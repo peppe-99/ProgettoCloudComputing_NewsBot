@@ -64,7 +64,7 @@ USER_STATE = UserState(MEMORY)
 CLICKBAIT_DIALOG = ClickbaitDialog()
 
 # Create the Bot
-BOT = NewsBot(USER_STATE, CONVERSATION_STATE, contact_LUIS, CLICKBAIT_DIALOG)
+BOT = NewsBot(USER_STATE, CONVERSATION_STATE, CONTACT_LUIS, CLICKBAIT_DIALOG)
 
 
 # Listen for incoming requests on /api/messages
