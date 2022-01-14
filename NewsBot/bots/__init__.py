@@ -1,3 +1,3 @@
-from .bot import NewsBot
+from .news_bot import NewsBot
 
 __all__ = ["NewsBot"]
