@@ -16,7 +16,7 @@ from botbuilder.core.integration import aiohttp_error_middleware
 from botbuilder.schema import Activity, ActivityTypes
 
 from bots import NewsBot
-from dialogs.ClickbaitDialog import ClickbaitDialog
+from dialogs.clickbait_dialog import ClickbaitDialog
 from help_modules import ContactLUIS
 from config import DefaultConfig
 
@@ -61,7 +61,7 @@ ADAPTER.on_turn_error = on_error
 MEMORY = MemoryStorage()
 CONVERSATION_STATE = ConversationState(MEMORY)
 USER_STATE = UserState(MEMORY)
-CLICKBAIT_DIALOG = ClickbaitDialog()
+CLICKBAIT_DIALOG = ClickbaitDialog(CONFIG)
 
 # Create the Bot
 BOT = NewsBot(USER_STATE, CONVERSATION_STATE, CONTACT_LUIS, CLICKBAIT_DIALOG)
