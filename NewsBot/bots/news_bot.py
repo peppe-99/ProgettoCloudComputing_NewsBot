@@ -5,14 +5,16 @@ from config import DefaultConfig
 
 import requests
 from threading import Thread
-from dialogs.ClickbaitDialog import ClickbaitDialog
+from dialogs.clickbait_dialog import ClickbaitDialog
 
 
 class NewsBot(ActivityHandler):
-    def __init__(self, user_state: UserState, conversation_state: ConversationState, luis_recognizer: ContactLUIS, clickbait_dialog: ClickbaitDialog):
+    def __init__(self, user_state: UserState, conversation_state: ConversationState, luis_recognizer: ContactLUIS,
+                 clickbait_dialog: ClickbaitDialog):
         self.HELLO_MESSAGE = "Ciao sono NewsBot. Come posso esserti d\'aiuto?"
-        self.HELP_MESSAGE = "Sono ancora in fase di sviluppo, per ora ecco cosa posso fare:\n\n" \
-                            "Fornirti notizie su ciò che desideri. Ad esempio, prova a dire \"Vorrei delle notizie sui vaccini\""
+        self.HELP_MESSAGES = ["Sono ancora in fase di sviluppo, per ora ecco cosa posso fare:",
+                              "1 - Fornirti notizie su ciò che desideri. Ad esempio, prova a dire \"Vorrei delle notizie sui vaccini\" oppure \"Ultimi aggiornamenti sul calcio mercato\"",
+                              "2 - Controllare se il titolo di un articolo è clickbait o meno. Ad esempio, prova a dire \"Puoi controllare se questo titolo è clickbait?\" oppure seplicemente \"Clickbait\""]
         self.ERROR_MESSAGE = "ops...qualcosa è andato storto :("
 
         self._user_state = user_state
@@ -72,7 +74,8 @@ class NewsBot(ActivityHandler):
                     await turn_context.send_activity(self.HELLO_MESSAGE)
 
                 elif intent == "Aiuto" or intent == "None":
-                    await turn_context.send_activity(self.HELP_MESSAGE)
+                    for message in self.HELP_MESSAGES:
+                        await turn_context.send_activity(message)
 
             except Exception as exception:
                 await turn_context.send_activity(self.ERROR_MESSAGE)
