@@ -5,23 +5,25 @@ from config import DefaultConfig
 
 import requests
 from threading import Thread
-from dialogs.clickbait_dialog import ClickbaitDialog
+from dialogs import ClickbaitDialog
+from dialogs import RegistrationDialog
 
 
 class NewsBot(ActivityHandler):
     def __init__(self, user_state: UserState, conversation_state: ConversationState, luis_recognizer: ContactLUIS,
-                 clickbait_dialog: ClickbaitDialog):
+                 clickbait_dialog: ClickbaitDialog, registration_dialog: RegistrationDialog):
+        self.last_intent = None
         self.HELLO_MESSAGE = "Ciao sono NewsBot. Come posso esserti d\'aiuto?"
         self.HELP_MESSAGES = ["Sono ancora in fase di sviluppo, per ora ecco cosa posso fare:",
                               "1 - Fornirti notizie su ciò che desideri. Ad esempio, prova a dire \"Vorrei delle notizie sui vaccini\" oppure \"Ultimi aggiornamenti sul calcio mercato\"",
                               "2 - Controllare se il titolo di un articolo è clickbait o meno. Ad esempio, prova a dire \"Puoi controllare se questo titolo è clickbait?\" oppure seplicemente \"Clickbait\""]
         self.ERROR_MESSAGE = "ops...qualcosa è andato storto :("
-
         self._user_state = user_state
         self.user_state_accessor = self._user_state.create_property("WelcomeUserState")
         self._conversation_state = conversation_state
         self._luis_recognizer = luis_recognizer
         self._clickbait_dialog = clickbait_dialog
+        self._registration_dialog = registration_dialog
         self._config = DefaultConfig()
         self.calls_luis = True
 
@@ -44,10 +46,19 @@ class NewsBot(ActivityHandler):
                 if self.calls_luis:
                     recognizer_result = await self._luis_recognizer.recognize(turn_context)
 
-                    intent = help_function.get_intent(recognizer_result)
-                    print(intent)
+                    self.last_intent = help_function.get_intent(recognizer_result)
 
-                if not self.calls_luis or intent == "Clickbait":
+                if self.last_intent == "Registrazione" or not self._registration_dialog.is_finished:
+                    self.calls_luis = False
+                    await DialogHelper.run_dialog(
+                        self._registration_dialog,
+                        turn_context,
+                        self._conversation_state.create_property("DialogState")
+                    )
+                    if self._registration_dialog.is_finished:
+                        self.calls_luis = True
+
+                elif self.last_intent == "Clickbait" or not self._clickbait_dialog.is_finished:
                     self.calls_luis = False
                     await DialogHelper.run_dialog(
                         self._clickbait_dialog,
@@ -57,7 +68,7 @@ class NewsBot(ActivityHandler):
                     if self._clickbait_dialog.is_finished:
                         self.calls_luis = True
 
-                elif intent == "NotizieBySoggetto":
+                elif self.last_intent == "NotizieBySoggetto":
                     result = recognizer_result.entities.get('$instance')
                     result = result.get('SoggettoNotizia')
                     result = result[0]
@@ -70,10 +81,10 @@ class NewsBot(ActivityHandler):
                     ).start()
                     return
 
-                elif intent == "Saluto":
+                elif self.last_intent == "Saluto":
                     await turn_context.send_activity(self.HELLO_MESSAGE)
 
-                elif intent == "Aiuto" or intent == "None":
+                elif self.last_intent == "Aiuto" or self.last_intent == "None":
                     for message in self.HELP_MESSAGES:
                         await turn_context.send_activity(message)
 

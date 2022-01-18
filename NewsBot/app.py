@@ -17,6 +17,7 @@ from botbuilder.schema import Activity, ActivityTypes
 
 from bots import NewsBot
 from dialogs.clickbait_dialog import ClickbaitDialog
+from dialogs.registration_dialog import RegistrationDialog
 from help_modules import ContactLUIS
 from config import DefaultConfig
 
@@ -62,9 +63,10 @@ MEMORY = MemoryStorage()
 CONVERSATION_STATE = ConversationState(MEMORY)
 USER_STATE = UserState(MEMORY)
 CLICKBAIT_DIALOG = ClickbaitDialog(CONFIG)
+REGISTRATION_DIALOG = RegistrationDialog()
 
 # Create the Bot
-BOT = NewsBot(USER_STATE, CONVERSATION_STATE, CONTACT_LUIS, CLICKBAIT_DIALOG)
+BOT = NewsBot(USER_STATE, CONVERSATION_STATE, CONTACT_LUIS, CLICKBAIT_DIALOG, REGISTRATION_DIALOG)
 
 
 # Listen for incoming requests on /api/messages
