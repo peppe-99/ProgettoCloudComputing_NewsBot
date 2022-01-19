@@ -1,11 +1,11 @@
 from botbuilder.core import ActivityHandler, TurnContext, MessageFactory, UserState, ConversationState
 from botbuilder.schema import ChannelAccount, Activity, ActivityTypes
-from help_modules import ContactLUIS, WelcomeUserState, help_function, DialogHelper
+from help_modules import ContactLUIS, WelcomeUserState, help_function
 from config import DefaultConfig
 
 import requests
 from threading import Thread
-from dialogs import ClickbaitDialog
+from dialogs import ClickbaitDialog, DialogHelper
 from dialogs import RegistrationDialog
 
 

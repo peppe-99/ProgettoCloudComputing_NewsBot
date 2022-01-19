@@ -1,8 +1,3 @@
-from pprint import pprint
-
-import requests
-from config import DefaultConfig
-from botbuilder.schema import Activity, ActivityTypes
 from botbuilder.core import MessageFactory
 import re
 from botbuilder.dialogs.choices import Choice
@@ -18,12 +13,14 @@ from botbuilder.dialogs.prompts import (
     ConfirmPrompt,
     PromptOptions,
 )
-from help_modules import RegisteredUser
+from help_modules import RegisteredUser, DatabaseHelper
 
 
 class RegistrationDialog(ComponentDialog):
-    def __init__(self):
+    def __init__(self, database_helper: DatabaseHelper):
         super(RegistrationDialog, self).__init__(RegistrationDialog.__name__)
+
+        self._database_heper = database_helper
 
         self.add_dialog(
             WaterfallDialog(
@@ -41,6 +38,7 @@ class RegistrationDialog(ComponentDialog):
         self.add_dialog(TextPrompt(TextPrompt.__name__))
         self.add_dialog(ConfirmPrompt(ConfirmPrompt.__name__))
         self.add_dialog(ChoicePrompt(ChoicePrompt.__name__))
+
         self.is_finished = False
         self.choises = ["Sport", "Financial", "Healt"]
         self.registered_user = RegisteredUser("", [])
@@ -59,18 +57,24 @@ class RegistrationDialog(ComponentDialog):
             "(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|\"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*\")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9]))\.){3}(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9])|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])")
 
         if pattern.match(step_context.result):
-            # TODO: controllare se l'utente è già registrato, ovvero se la mail sta nel db
-
-            await step_context.context.send_activity(
-                MessageFactory.text(f"Email: \"{step_context.result}\""),
-            )
-            step_context.values["email"] = step_context.result
-            return await step_context.prompt(
-                ConfirmPrompt.__name__,
-                PromptOptions(
-                    prompt=MessageFactory.text("L'email è corretta?"),
+            user = self._database_heper.find_by_id(step_context.result)
+            if user is None:
+                await step_context.context.send_activity(
+                    MessageFactory.text(f"Email: \"{step_context.result}\""),
                 )
-            )
+                step_context.values["email"] = step_context.result
+                return await step_context.prompt(
+                    ConfirmPrompt.__name__,
+                    PromptOptions(
+                        prompt=MessageFactory.text("L'email è corretta?"),
+                    )
+                )
+            else:
+                await step_context.context.send_activity(
+                    MessageFactory.text(f"Sei già registrato. I tuoi interessi sono {user.preferenze}. Verrai aggiornato ogni lunedì")
+                )
+                self.is_finished = True
+                return await step_context.end_dialog()
         else:
             await step_context.context.send_activity(
                 MessageFactory.text(f"L'email: \"{step_context.result}\" non è valida"),
@@ -139,7 +143,6 @@ class RegistrationDialog(ComponentDialog):
             TextPrompt.__name__,
             PromptOptions(prompt=MessageFactory.text("Registrazione completata"))
         )
-        # TODO: salvare veramente l'utente sul db
-
+        self._database_heper.insert_data(self.registered_user)
         print(f"Email: {self.registered_user.email}\nPreferenze: {self.registered_user.preferenze}")
         return await step_context.end_dialog()
