@@ -48,7 +48,7 @@ class NewsBot(ActivityHandler):
 
                     self.last_intent = help_function.get_intent(recognizer_result)
 
-                if self.last_intent == "Registrazione" or not self._registration_dialog.is_finished:
+                if self.last_intent == "NuovaRegistrazione":
                     self.calls_luis = False
                     await DialogHelper.run_dialog(
                         self._registration_dialog,
@@ -58,7 +58,7 @@ class NewsBot(ActivityHandler):
                     if self._registration_dialog.is_finished:
                         self.calls_luis = True
 
-                elif self.last_intent == "Clickbait" or not self._clickbait_dialog.is_finished:
+                elif self.last_intent == "Clickbait":
                     self.calls_luis = False
                     await DialogHelper.run_dialog(
                         self._clickbait_dialog,
