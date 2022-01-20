@@ -55,14 +55,11 @@ class DeleteRegistrationDialog(ComponentDialog):
         if pattern.match(step_context.result):
             user = self._database_heper.find_by_id(step_context.result)
             if user is not None:
-                await step_context.context.send_activity(
-                    MessageFactory.text(f"Rimozione servizio per l'email: \"{step_context.result}\""),
-                )
                 step_context.values["email"] = step_context.result
                 return await step_context.prompt(
                     ConfirmPrompt.__name__,
                     PromptOptions(
-                        prompt=MessageFactory.text("L'email è corretta?"),
+                        prompt=MessageFactory.text("Sei sicuro di voler cancellare la tua iscrizione?"),
                     )
                 )
             else:
@@ -79,15 +76,20 @@ class DeleteRegistrationDialog(ComponentDialog):
             self.is_finished = True
             return await step_context.end_dialog()
 
-
-
     async def remove_email(self, step_context : WaterfallStepContext) -> DialogTurnResult:
-        email = step_context.values["email"]
-        self._database_heper.delete_by_id(email)
         self.is_finished = True
-        await step_context.prompt(
-            TextPrompt.__name__,
-            PromptOptions(prompt=MessageFactory.text("Rimozione email dal servizio completata"))
-        )
-        return await step_context.end_dialog()
+        if step_context.result:
+            email = step_context.values["email"]
+            self._database_heper.delete_by_id(email)
+            await step_context.prompt(
+                TextPrompt.__name__,
+                PromptOptions(prompt=MessageFactory.text("Iscrizione cancellata con successo."))
+            )
+            return await step_context.end_dialog()
+        else:
+            await step_context.prompt(
+                TextPrompt.__name__,
+                PromptOptions(prompt=MessageFactory.text("Cancellazione annullata."))
+            )
+            return await step_context.end_dialog()
 
