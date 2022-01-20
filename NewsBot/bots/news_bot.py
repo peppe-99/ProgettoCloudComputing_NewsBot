@@ -5,13 +5,13 @@ from config import DefaultConfig
 
 import requests
 from threading import Thread
-from dialogs import ClickbaitDialog, DialogHelper, DelateRegistrationDialog
+from dialogs import ClickbaitDialog, DialogHelper, DeleteRegistrationDialog
 from dialogs import RegistrationDialog
 
 
 class NewsBot(ActivityHandler):
     def __init__(self, user_state: UserState, conversation_state: ConversationState, luis_recognizer: ContactLUIS,
-                 clickbait_dialog: ClickbaitDialog, registration_dialog: RegistrationDialog, delate_registratio: DelateRegistrationDialog ):
+                 clickbait_dialog: ClickbaitDialog, registration_dialog: RegistrationDialog, delate_registratio: DeleteRegistrationDialog):
         self.last_intent = None
         self.HELLO_MESSAGE = "Ciao sono NewsBot. Come posso esserti d\'aiuto?"
         self.HELP_MESSAGES = ["Sono ancora in fase di sviluppo, per ora ecco cosa posso fare:",

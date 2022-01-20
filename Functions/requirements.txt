@@ -6,3 +6,4 @@ azure-functions
 pandas
 requests
 tensorflow
+azure-cosmos==3.2.0

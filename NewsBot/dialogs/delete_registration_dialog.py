@@ -16,9 +16,9 @@ from botbuilder.dialogs.prompts import (
 from help_modules import RegisteredUser, DatabaseHelper
 
 
-class DelateRegistrationDialog(ComponentDialog):
+class DeleteRegistrationDialog(ComponentDialog):
     def __init__(self, database_helper: DatabaseHelper):
-        super(DelateRegistrationDialog, self).__init__(DelateRegistrationDialog.__name__)
+        super(DeleteRegistrationDialog, self).__init__(DeleteRegistrationDialog.__name__)
 
         self._database_heper = database_helper
 

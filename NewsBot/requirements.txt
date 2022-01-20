@@ -2,4 +2,4 @@ botbuilder-integration-aiohttp>=4.14.0
 botbuilder-ai
 botbuilder-dialogs
 requests
-azure-cosmos
+azure-cosmos==3.2.0

@@ -18,7 +18,7 @@ from botbuilder.schema import Activity, ActivityTypes
 from bots import NewsBot
 from dialogs.clickbait_dialog import ClickbaitDialog
 from dialogs.registration_dialog import RegistrationDialog
-from dialogs.delate_registration_dialog import DelateRegistrationDialog
+from dialogs.delete_registration_dialog import DeleteRegistrationDialog
 from help_modules import ContactLUIS, DatabaseHelper
 from config import DefaultConfig
 
@@ -68,7 +68,7 @@ DATABASE_HELPER.create_database("NewsBotDatabase")
 DATABASE_HELPER.create_container("UtentiRegistrati")
 CLICKBAIT_DIALOG = ClickbaitDialog(CONFIG)
 REGISTRATION_DIALOG = RegistrationDialog(DATABASE_HELPER)
-DELETE_REGISTRATION_DIALOG = DelateRegistrationDialog(DATABASE_HELPER)
+DELETE_REGISTRATION_DIALOG = DeleteRegistrationDialog(DATABASE_HELPER)
 
 # Create the Bot
 BOT = NewsBot(USER_STATE, CONVERSATION_STATE, CONTACT_LUIS, CLICKBAIT_DIALOG, REGISTRATION_DIALOG, DELETE_REGISTRATION_DIALOG)
