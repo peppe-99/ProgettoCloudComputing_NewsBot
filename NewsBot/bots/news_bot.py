@@ -5,13 +5,13 @@ from config import DefaultConfig
 
 import requests
 from threading import Thread
-from dialogs import ClickbaitDialog, DialogHelper
+from dialogs import ClickbaitDialog, DialogHelper, DelateRegistrationDialog
 from dialogs import RegistrationDialog
 
 
 class NewsBot(ActivityHandler):
     def __init__(self, user_state: UserState, conversation_state: ConversationState, luis_recognizer: ContactLUIS,
-                 clickbait_dialog: ClickbaitDialog, registration_dialog: RegistrationDialog):
+                 clickbait_dialog: ClickbaitDialog, registration_dialog: RegistrationDialog, delate_registratio: DelateRegistrationDialog ):
         self.last_intent = None
         self.HELLO_MESSAGE = "Ciao sono NewsBot. Come posso esserti d\'aiuto?"
         self.HELP_MESSAGES = ["Sono ancora in fase di sviluppo, per ora ecco cosa posso fare:",
@@ -24,6 +24,7 @@ class NewsBot(ActivityHandler):
         self._luis_recognizer = luis_recognizer
         self._clickbait_dialog = clickbait_dialog
         self._registration_dialog = registration_dialog
+        self._delate_registration = delate_registratio
         self._config = DefaultConfig()
         self.calls_luis = True
 
@@ -56,6 +57,16 @@ class NewsBot(ActivityHandler):
                         self._conversation_state.create_property("DialogState")
                     )
                     if self._registration_dialog.is_finished:
+                        self.calls_luis = True
+
+                elif self.last_intent == "EliminaRegistrazione":
+                    self.calls_luis = False
+                    await DialogHelper.run_dialog(
+                        self._delate_registration,
+                        turn_context,
+                        self._conversation_state.create_property("DialogState")
+                    )
+                    if self._delate_registration.is_finished:
                         self.calls_luis = True
 
                 elif self.last_intent == "Clickbait":
