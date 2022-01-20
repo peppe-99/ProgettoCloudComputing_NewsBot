@@ -40,12 +40,12 @@ class RegistrationDialog(ComponentDialog):
         self.add_dialog(ChoicePrompt(ChoicePrompt.__name__))
 
         self.is_finished = False
-        self.choises = ["Sport", "Financial", "Healt"]
+        self.choices = ["Business", "Entertainment", "ScienceAndTechnology", "Sports", "World", "Culture", "Education", "Italy"]
         self.registered_user = RegisteredUser("", [])
 
     async def get_email_user(self, step_context: WaterfallStepContext) -> DialogTurnResult:
         self.is_finished = False
-        self.choises = ["Sport", "Financial", "Healt"]
+        self.choices = ["Business", "Entertainment", "ScienceAndTechnology", "Sports", "World", "Culture", "Education", "Italy"]
 
         return await step_context.prompt(
             TextPrompt.__name__,
@@ -86,7 +86,7 @@ class RegistrationDialog(ComponentDialog):
         if step_context.result:
             self.registered_user.set_email(step_context.values["email"])
             scelte = []
-            for stringa in self.choises:
+            for stringa in self.choices:
                 scelte.append(Choice(stringa))
 
             return await step_context.prompt(
@@ -106,10 +106,10 @@ class RegistrationDialog(ComponentDialog):
 
     async def add_category_two(self, step_context: WaterfallStepContext) -> DialogTurnResult:
         if step_context.result:
-            self.choises.remove(step_context.result.value)
+            self.choices.remove(step_context.result.value)
             self.registered_user.add_preferenza(step_context.result.value)
             scelte = []
-            for stringa in self.choises:
+            for stringa in self.choices:
                 scelte.append(Choice(stringa))
 
             return await step_context.prompt(
@@ -123,9 +123,9 @@ class RegistrationDialog(ComponentDialog):
 
     async def add_category_three(self, step_context: WaterfallStepContext) -> DialogTurnResult:
         self.registered_user.add_preferenza(step_context.result.value)
-        self.choises.remove(step_context.result.value)
+        self.choices.remove(step_context.result.value)
         scelte = []
-        for stringa in self.choises:
+        for stringa in self.choices:
             scelte.append(Choice(stringa))
 
         return await step_context.prompt(
