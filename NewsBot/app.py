@@ -17,7 +17,7 @@ from botbuilder.schema import Activity, ActivityTypes
 
 from bots import NewsBot
 from dialogs import ClickbaitDialog, RegistrationDialog, DeleteRegistrationDialog, UpdateRegistrationDialog
-from help_modules import ContactLUIS, DatabaseHelper
+from help_modules import ContactLUIS, DatabaseHelper, ContactOCR
 from config import DefaultConfig
 
 CONFIG = DefaultConfig()
@@ -64,7 +64,8 @@ USER_STATE = UserState(MEMORY)
 DATABASE_HELPER = DatabaseHelper(CONFIG)
 DATABASE_HELPER.create_database("NewsBotDatabase")
 DATABASE_HELPER.create_container("UtentiRegistrati")
-CLICKBAIT_DIALOG = ClickbaitDialog(CONFIG)
+CONTACT_OCR = ContactOCR(CONFIG)
+CLICKBAIT_DIALOG = ClickbaitDialog(CONFIG, CONTACT_OCR)
 REGISTRATION_DIALOG = RegistrationDialog(DATABASE_HELPER)
 DELETE_REGISTRATION_DIALOG = DeleteRegistrationDialog(DATABASE_HELPER)
 UPDATE_REGISTRATION_DIALOG = UpdateRegistrationDialog(DATABASE_HELPER)
