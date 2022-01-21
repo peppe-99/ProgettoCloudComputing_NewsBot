@@ -1,5 +1,3 @@
-import json
-
 import azure.cosmos.cosmos_client as cosmos_client
 import azure.cosmos.errors as errors
 import azure.cosmos.http_constants as http_costants
@@ -7,9 +5,6 @@ import azure.cosmos.documents as documents
 
 from config import DefaultConfig
 from help_modules import RegisteredUser
-
-import hashlib
-
 
 class DatabaseHelper:
     def __init__(self, default_config: DefaultConfig):

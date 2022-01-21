@@ -2,7 +2,6 @@ from botbuilder.core import ActivityHandler, TurnContext, MessageFactory, UserSt
 from botbuilder.schema import ChannelAccount, Activity, ActivityTypes
 from help_modules import ContactLUIS, WelcomeUserState, help_function
 from config import DefaultConfig
-
 import requests
 from threading import Thread
 from dialogs import ClickbaitDialog, DialogHelper, DeleteRegistrationDialog, UpdateRegistrationDialog
@@ -32,7 +31,6 @@ class NewsBot(ActivityHandler):
 
     async def on_turn(self, turn_context: TurnContext):
         await super().on_turn(turn_context)
-
         await self._user_state.save_changes(turn_context)
         await self._conversation_state.save_changes(turn_context)
 
@@ -45,7 +43,6 @@ class NewsBot(ActivityHandler):
 
         if self._luis_recognizer.is_configured:
             try:
-                intent = None
                 if self.calls_luis:
                     recognizer_result = await self._luis_recognizer.recognize(turn_context)
 
@@ -126,8 +123,8 @@ class NewsBot(ActivityHandler):
         await context.send_activity(Activity(type=ActivityTypes.typing))
         response = requests.get(self._config.NEWS_BY_SUBJECT_FUNCTION_URL, {"subject": soggetto_notizia})
         response.raise_for_status()
-        notizie = dict(response.json())
+        news = dict(response.json())
 
         await context.send_activity(f"Ecco cosa ho trovato riguardo \"{soggetto_notizia}\"")
-        for nome in notizie.keys():
-            await context.send_activity(nome + "\n\n" + notizie[nome])
+        for nome in news.keys():
+            await context.send_activity(nome + "\n\n" + news[nome])
