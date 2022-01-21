@@ -13,7 +13,8 @@ from botbuilder.dialogs.prompts import (
     ConfirmPrompt,
     PromptOptions,
 )
-from help_modules import RegisteredUser, DatabaseHelper
+from help_modules import DatabaseHelper
+from help_modules.help_function import check_email
 
 
 class DeleteRegistrationDialog(ComponentDialog):
@@ -46,13 +47,8 @@ class DeleteRegistrationDialog(ComponentDialog):
             PromptOptions(prompt=MessageFactory.text("Inserisci l'email con cui sei registrato")),
         )
 
-
-
     async def check_email_delete(self, step_context: WaterfallStepContext) -> DialogTurnResult:
-        pattern = re.compile(
-            "(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|\"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*\")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9]))\.){3}(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9])|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])")
-
-        if pattern.match(step_context.result):
+        if check_email(step_context.result):
             user = self._database_heper.find_by_id(step_context.result)
             if user is not None:
                 step_context.values["email"] = step_context.result
@@ -64,32 +60,30 @@ class DeleteRegistrationDialog(ComponentDialog):
                 )
             else:
                 await step_context.context.send_activity(
-                    MessageFactory.text(
-                        f"Non esiste alcuna email {step_context.result} essere registrata al servizio.")
+                    MessageFactory.text(f"Non esiste alcuna iscrizione con l'email \"{step_context.result}\"")
                 )
                 self.is_finished = True
                 return await step_context.end_dialog()
         else:
             await step_context.context.send_activity(
-                MessageFactory.text(f"L'email: \"{step_context.result}\" non è valida"),
+                MessageFactory.text(f"L'email \"{step_context.result}\" non è valida"),
             )
             self.is_finished = True
             return await step_context.end_dialog()
 
-    async def remove_email(self, step_context : WaterfallStepContext) -> DialogTurnResult:
+    async def remove_email(self, step_context: WaterfallStepContext) -> DialogTurnResult:
         self.is_finished = True
         if step_context.result:
             email = step_context.values["email"]
             self._database_heper.delete_by_id(email)
             await step_context.prompt(
                 TextPrompt.__name__,
-                PromptOptions(prompt=MessageFactory.text("Iscrizione cancellata con successo."))
+                PromptOptions(prompt=MessageFactory.text("Iscrizione cancellata con successo"))
             )
             return await step_context.end_dialog()
         else:
             await step_context.prompt(
                 TextPrompt.__name__,
-                PromptOptions(prompt=MessageFactory.text("Cancellazione annullata."))
+                PromptOptions(prompt=MessageFactory.text("Cancellazione annullata"))
             )
             return await step_context.end_dialog()
-

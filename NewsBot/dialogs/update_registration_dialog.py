@@ -14,6 +14,7 @@ from botbuilder.dialogs.prompts import (
     PromptOptions,
 )
 from help_modules import RegisteredUser, DatabaseHelper
+from help_modules.help_function import check_email
 
 
 class UpdateRegistrationDialog(ComponentDialog):
@@ -27,8 +28,8 @@ class UpdateRegistrationDialog(ComponentDialog):
             WaterfallDialog(
                 WaterfallDialog.__name__,
                 [
-                    self.get_email,
-                    self.check_email,
+                    self.get_email_user,
+                    self.check_email_user,
                     self.new_category_one,
                     self.new_category_two,
                     self.new_category_three,
@@ -40,14 +41,12 @@ class UpdateRegistrationDialog(ComponentDialog):
         self.add_dialog(ConfirmPrompt(ConfirmPrompt.__name__))
         self.add_dialog(ChoicePrompt(ChoicePrompt.__name__))
 
-        self.choices = ["Business", "Entertainment", "ScienceAndTechnology", "Sports", "World", "Culture", "Education",
-                        "Italy"]
+        self.choices = ["Business", "Entertainment", "ScienceAndTechnology", "Sports", "World", "Culture", "Education", "Italy"]
         self.is_finished = False
 
-    async def get_email(self, step_context: WaterfallStepContext) -> DialogTurnResult:
+    async def get_email_user(self, step_context: WaterfallStepContext) -> DialogTurnResult:
         self.is_finished = False
-        self.choices = ["Business", "Entertainment", "ScienceAndTechnology", "Sports", "World", "Culture", "Education",
-                        "Italy"]
+        self.choices = ["Business", "Entertainment", "ScienceAndTechnology", "Sports", "World", "Culture", "Education", "Italy"]
         self.registered_user = RegisteredUser("", [])
 
         return await step_context.prompt(
@@ -55,11 +54,8 @@ class UpdateRegistrationDialog(ComponentDialog):
             PromptOptions(prompt=MessageFactory.text("Inserisci l'email con cui sei registrato")),
         )
 
-    async def check_email(self, step_context: WaterfallStepContext) -> DialogTurnResult:
-        pattern = re.compile(
-            "(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|\"(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21\x23-\x5b\x5d-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])*\")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\[(?:(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9]))\.){3}(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9])|[a-z0-9-]*[a-z0-9]:(?:[\x01-\x08\x0b\x0c\x0e-\x1f\x21-\x5a\x53-\x7f]|\\[\x01-\x09\x0b\x0c\x0e-\x7f])+)\])")
-
-        if pattern.match(step_context.result):
+    async def check_email_user(self, step_context: WaterfallStepContext) -> DialogTurnResult:
+        if check_email(step_context.result):
             user = self._database_helper.find_by_id(step_context.result)
             if user is not None:
                 self.registered_user.set_email(user.email)
@@ -72,8 +68,7 @@ class UpdateRegistrationDialog(ComponentDialog):
                 )
             else:
                 await step_context.context.send_activity(
-                    MessageFactory.text(
-                        f"Non esiste alcuna email {step_context.result} essere registrata al servizio.")
+                    MessageFactory.text(f"Non esiste alcuna iscrizione con l'email \"{step_context.result}\"")
                 )
                 self.is_finished = True
                 return await step_context.end_dialog()
@@ -87,18 +82,25 @@ class UpdateRegistrationDialog(ComponentDialog):
     async def new_category_one(self, step_context: WaterfallStepContext) -> DialogTurnResult:
         if step_context.result:
             await step_context.context.send_activity(
-                MessageFactory.text(f"Le tue attuali preferenze sono: {self.registered_user.preferenze}")
+                MessageFactory.text(f"I tuoi attuali interessi sono {self.registered_user.preferenze[0]}, "
+                                    f"{self.registered_user.preferenze[1]} e {self.registered_user.preferenze[2]}")
             )
             self.registered_user.preferenze = []
-            scelte = []
-            for stringa in self.choices:
-                scelte.append(Choice(stringa))
+            possible_choices = []
+            for choice in self.choices:
+                possible_choices.append(Choice(choice))
+
+            await step_context.context.send_activity(
+                MessageFactory.text(f"I tuoi attuali interessi sono {self.registered_user.preferenze[0]}, "
+                                    f"{self.registered_user.preferenze[1]} e {self.registered_user.preferenze[2]}")
+            )
+            await step_context.context.send_activity(MessageFactory.text("Scegli i tuoi nuovi interessi"))
 
             return await step_context.prompt(
                 ChoicePrompt.__name__,
                 PromptOptions(
-                    prompt=MessageFactory.text("Scegli i tuoi nuovi interessi"),
-                    choices=scelte,
+                    prompt=MessageFactory.text("Seleziona il primo interesse"),
+                    choices=possible_choices,
                 ),
             )
         else:
@@ -112,15 +114,15 @@ class UpdateRegistrationDialog(ComponentDialog):
         if step_context.result:
             self.choices.remove(step_context.result.value)
             self.registered_user.add_preferenza(step_context.result.value)
-            scelte = []
-            for stringa in self.choices:
-                scelte.append(Choice(stringa))
+            possible_choices = []
+            for choice in self.choices:
+                possible_choices.append(Choice(choice))
 
             return await step_context.prompt(
                 ChoicePrompt.__name__,
                 PromptOptions(
-                    prompt=MessageFactory.text("Scegli i tuoi nuovi interessi"),
-                    choices=scelte,
+                    prompt=MessageFactory.text("Seleziona il secondo interesse"),
+                    choices=possible_choices,
                 ),
             )
         return await step_context.end_dialog()
@@ -128,25 +130,24 @@ class UpdateRegistrationDialog(ComponentDialog):
     async def new_category_three(self, step_context: WaterfallStepContext) -> DialogTurnResult:
         self.choices.remove(step_context.result.value)
         self.registered_user.add_preferenza(step_context.result.value)
-        scelte = []
-        for stringa in self.choices:
-            scelte.append(Choice(stringa))
+        possible_choices = []
+        for choice in self.choices:
+            possible_choices.append(Choice(choice))
 
         return await step_context.prompt(
             ChoicePrompt.__name__,
             PromptOptions(
-                prompt=MessageFactory.text("Scegli i tuoi nuovi interessi"),
-                choices=scelte,
+                prompt=MessageFactory.text("Seleziona l'ultimo interesse"),
+                choices=possible_choices,
             ),
         )
 
     async def confirm_update(self, step_context: WaterfallStepContext) -> DialogTurnResult:
         self.registered_user.add_preferenza(step_context.result.value)
         self.is_finished = True
-        await step_context.prompt(
-            TextPrompt.__name__,
-            PromptOptions(prompt=MessageFactory.text("Interessi aggiornati"))
-        )
         self._database_helper.insert_data(self.registered_user)
-        print(f"Email: {self.registered_user.email}\nPreferenze: {self.registered_user.preferenze}")
+        await step_context.context.send_activity(MessageFactory.text(f"I tuoi nuovi interessi sono: "
+                                                                     f"{self.registered_user.preferenze[0]}, "
+                                                                     f"{self.registered_user.preferenze[1]} e"
+                                                                     f"{self.registered_user.preferenze[2]}"))
         return await step_context.end_dialog()

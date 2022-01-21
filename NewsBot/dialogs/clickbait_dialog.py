@@ -25,7 +25,7 @@ from help_modules import help_function, ContactOCR
 
 
 class ClickbaitDialog(ComponentDialog):
-    def __init__(self, default_config: DefaultConfig):
+    def __init__(self, default_config: DefaultConfig, contact_ocr: ContactOCR):
         super(ClickbaitDialog, self).__init__(ClickbaitDialog.__name__)
 
         self.add_dialog(
@@ -44,6 +44,7 @@ class ClickbaitDialog(ComponentDialog):
         self.add_dialog(ChoicePrompt(ChoicePrompt.__name__))
         self.add_dialog(AttachmentPrompt(AttachmentPrompt.__name__))
         self.config = default_config
+        self._contact_ocr = contact_ocr
         self.is_finished = False
         self.is_photo = False
 
@@ -52,22 +53,22 @@ class ClickbaitDialog(ComponentDialog):
         return await step_context.prompt(
             ChoicePrompt.__name__,
             PromptOptions(
-                prompt=MessageFactory.text("Come mi invierai il titol?"),
+                prompt=MessageFactory.text("Come vuoi inviarmi il titolo da controllare?"),
                 choices=[Choice("Foto"), Choice("Testo")]
             )
         )
 
     async def get_news_step(self, step_context: WaterfallStepContext) -> DialogTurnResult:
-        mode = step_context.result.value
+        modality = step_context.result.value
 
-        if mode == "Foto":
+        if modality == "Foto":
             self.is_photo = True
             return await step_context.prompt(
                 AttachmentPrompt.__name__,
-                PromptOptions(prompt=MessageFactory.text("Inviami l'immagine"))
+                PromptOptions(prompt=MessageFactory.text("Inviami l'immagine. Estrarrò il testo"))
             )
 
-        elif mode == "Testo":
+        elif modality == "Testo":
             await step_context.context.send_activity(Activity(type=ActivityTypes.typing))
             return await step_context.prompt(
                 TextPrompt.__name__,
@@ -77,23 +78,18 @@ class ClickbaitDialog(ComponentDialog):
     async def check_news_step(self, step_context: WaterfallStepContext) -> DialogTurnResult:
         if self.is_photo:
             self.is_photo = False
-            contact_ocr = ContactOCR(self.config)
-            print(step_context.result[0])
             attachment = step_context.result[0]
             url_attachment = attachment.content_url
-            data = urllib.request.urlretrieve(url_attachment, "attachment")
+            urllib.request.urlretrieve(url_attachment, "attachment")
             image_data = open("attachment", "rb").read()
             os.remove("attachment")
 
-            title = contact_ocr.send_request(image_data)
-
+            title = self._contact_ocr.send_request(image_data)
         else:
             title = step_context.result
 
         step_context.values["title"] = title
-        await step_context.context.send_activity(
-            MessageFactory.text(f"Titolo: \"{title}\""),
-        )
+        await step_context.context.send_activity(MessageFactory.text(f"Titolo: \"{title}\""),)
 
         return await step_context.prompt(
             ConfirmPrompt.__name__,
@@ -111,10 +107,7 @@ class ClickbaitDialog(ComponentDialog):
                 args=(self.call_clickbait_function(step_context),)
             ).start()
         else:
-            await step_context.prompt(
-                TextPrompt.__name__,
-                PromptOptions(prompt=MessageFactory.text("Ricomincia da capo"))
-            )
+            await step_context.context.send_activity(MessageFactory.text("Ricomincia da capo"))
 
         return await step_context.end_dialog()
 
