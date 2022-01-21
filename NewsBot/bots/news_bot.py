@@ -16,7 +16,9 @@ class NewsBot(ActivityHandler):
         self.HELLO_MESSAGE = "Ciao sono NewsBot. Come posso esserti d\'aiuto?"
         self.HELP_MESSAGES = ["Sono ancora in fase di sviluppo, per ora ecco cosa posso fare:",
                               "1 - Fornirti notizie su ciò che desideri. Ad esempio, prova a dire \"Vorrei delle notizie sui vaccini\" oppure \"Ultimi aggiornamenti sul calcio mercato\"",
-                              "2 - Controllare se il titolo di un articolo è clickbait o meno. Ad esempio, prova a dire \"Puoi controllare se questo titolo è clickbait?\" oppure seplicemente \"Clickbait\""]
+                              "2 - Controllare se il titolo di un articolo è clickbait o meno. Ad esempio, prova a dire \"Puoi controllare se questo titolo è clickbait?\" oppure seplicemente \"Clickbait\"",
+                              "3 - Aggiornarti quotidianamente via email sui tuoi interessi. Ad esempio, prova a dire \"Vorrei iscrivermi\" oppure \"Voglio registrarmi\"\n\n"
+                              "In ogni momento puoi cancellare la tua iscrizione, ad esempio dicendo \"elimina l'iscrizione\", oppure modificare i tuoi interessi, ad esempio dicendo \"vorrei cambiare i miei interessi\""]
         self.ERROR_MESSAGE = "ops...qualcosa è andato storto :("
         self._user_state = user_state
         self.user_state_accessor = self._user_state.create_property("WelcomeUserState")
