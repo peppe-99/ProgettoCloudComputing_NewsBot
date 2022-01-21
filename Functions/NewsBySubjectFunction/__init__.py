@@ -1,21 +1,21 @@
 import json
 import logging
-
 import azure.functions as func
 import requests
+
+from config import DefaultConfig
 
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
     logging.info('Arrivata una richiesta HTTP')
-    soggetto_notizia = req.params.get('subject')
+
+    default_config = DefaultConfig()
 
     MKT = 'it-IT'
     SORT_BY = 'Revelance'
-    BING_KEY = '66c387861a144d088af9b5b6ccb5c613'
-    SEARCH_URL = "https://api.bing.microsoft.com/v7.0/news/search"
     COUNT = 5
 
-    name = req.params.get('name')
+    soggetto_notizia = req.params.get('subject')
     if not soggetto_notizia:
         try:
             req_body = req.get_json()
@@ -28,9 +28,9 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         logging.info(f'Soggetto: {soggetto_notizia}')
         
         params = {'q': soggetto_notizia, 'mkt': MKT, 'sortBy': SORT_BY, 'count': COUNT}
-        headers = {'Ocp-Apim-Subscription-Key': BING_KEY}
+        headers = {'Ocp-Apim-Subscription-Key': default_config.BING_KEY}
         try:
-            response = requests.get(SEARCH_URL, headers=headers, params=params)
+            response = requests.get(default_config.SEARCH_URL, headers=headers, params=params)
             response.raise_for_status()
 
             response = dict(response.json())
