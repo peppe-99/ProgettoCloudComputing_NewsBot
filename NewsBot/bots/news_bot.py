@@ -1,5 +1,5 @@
-from botbuilder.core import ActivityHandler, TurnContext, MessageFactory, UserState, ConversationState
-from botbuilder.schema import ChannelAccount, Activity, ActivityTypes
+from botbuilder.core import ActivityHandler, TurnContext, MessageFactory, UserState, ConversationState, CardFactory
+from botbuilder.schema import ChannelAccount, Activity, ActivityTypes, CardImage
 from help_modules import ContactLUIS, WelcomeUserState, help_function
 from config import DefaultConfig
 import requests
@@ -7,6 +7,7 @@ from threading import Thread
 from dialogs import ClickbaitDialog, DialogHelper, DeleteRegistrationDialog, UpdateRegistrationDialog
 from dialogs import RegistrationDialog
 
+from botbuilder.schema import HeroCard
 
 class NewsBot(ActivityHandler):
     def __init__(self, user_state: UserState, conversation_state: ConversationState, luis_recognizer: ContactLUIS,
@@ -119,7 +120,27 @@ class NewsBot(ActivityHandler):
     async def on_members_added_activity(self, members_added: ChannelAccount, turn_context: TurnContext):
         for member_added in members_added:
             if member_added.id != turn_context.activity.recipient.id:
-                await turn_context.send_activity(self.HELLO_MESSAGE)
+                card = HeroCard(
+                    title="Benvenuto su BotNews!",
+                    text="Ciao, sono BotNews usami per ottenere informazionio in qualunque momento dove e quando vuoi !"
+                    "\n\n"
+                    "Per accedere a servizi offerti segui le seguenti istruzioni:"
+                    "\n\n"
+                     "1 - Forniscimi notizie su ciò che desideri. Ad esempio, dimmi: \"Vorrei delle notizie sulla situazione covid\"."
+                     "\n\n"
+                     "2- Controlliamo insieme se il titolo di un articolo è clickbait o meno. Ad esempio, prova a dire: \"Puoi controllare se questo titolo è clickbait?\" oppure seplicemente \"Clickbait\"."
+                    "\n\n"
+                    "3 - Puoi anche registrarti al servizio \"Delay-News\" che ti aggiornerà ogni giorno con le notizie relative alle tue preferenze."
+                    "\n\n"
+                    "4 - Se dimentichi le mie istruzioni basta dirmi: \"Aiuto\"."
+                    "\n\n"
+                    "Il Team di BotNews ricorda che il servizio è ancora in fase di sviluppo.",
+                    images=[CardImage(url="https://user-images.githubusercontent.com/34619485/88335884-a7d4af00-cd51-11ea-8021-75e10a2a53f5.jpg")]
+                )
+                return await turn_context.send_activity(
+                    MessageFactory.attachment(CardFactory.hero_card(card))
+                )
+                #await turn_context.send_activity(self.HELLO_MESSAGE)
 
     async def send_news(self, context: TurnContext, soggetto_notizia):
         await context.send_activity(Activity(type=ActivityTypes.typing))

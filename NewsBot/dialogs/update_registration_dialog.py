@@ -81,19 +81,14 @@ class UpdateRegistrationDialog(ComponentDialog):
 
     async def new_category_one(self, step_context: WaterfallStepContext) -> DialogTurnResult:
         if step_context.result:
+            possible_choices = []
             await step_context.context.send_activity(
                 MessageFactory.text(f"I tuoi attuali interessi sono {self.registered_user.preferenze[0]}, "
                                     f"{self.registered_user.preferenze[1]} e {self.registered_user.preferenze[2]}")
             )
             self.registered_user.preferenze = []
-            possible_choices = []
             for choice in self.choices:
                 possible_choices.append(Choice(choice))
-
-            await step_context.context.send_activity(
-                MessageFactory.text(f"I tuoi attuali interessi sono {self.registered_user.preferenze[0]}, "
-                                    f"{self.registered_user.preferenze[1]} e {self.registered_user.preferenze[2]}")
-            )
             await step_context.context.send_activity(MessageFactory.text("Scegli i tuoi nuovi interessi"))
 
             return await step_context.prompt(
@@ -148,6 +143,6 @@ class UpdateRegistrationDialog(ComponentDialog):
         self._database_helper.insert_data(self.registered_user)
         await step_context.context.send_activity(MessageFactory.text(f"I tuoi nuovi interessi sono: "
                                                                      f"{self.registered_user.preferenze[0]}, "
-                                                                     f"{self.registered_user.preferenze[1]} e"
+                                                                     f"{self.registered_user.preferenze[1]} e "
                                                                      f"{self.registered_user.preferenze[2]}"))
         return await step_context.end_dialog()
