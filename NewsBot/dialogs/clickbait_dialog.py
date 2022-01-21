@@ -1,3 +1,5 @@
+import os
+import urllib.request
 from threading import Thread
 
 import requests
@@ -8,15 +10,18 @@ from botbuilder.dialogs import (
     WaterfallStepContext,
     DialogTurnResult,
 )
+from botbuilder.dialogs.choices import Choice
 from botbuilder.dialogs.prompts import (
     TextPrompt,
     ConfirmPrompt,
     PromptOptions,
+    ChoicePrompt,
+    AttachmentPrompt,
 )
 from botbuilder.schema import Activity, ActivityTypes
 
 from config import DefaultConfig
-from help_modules import help_function
+from help_modules import help_function, ContactOCR
 
 
 class ClickbaitDialog(ComponentDialog):
@@ -27,6 +32,7 @@ class ClickbaitDialog(ComponentDialog):
             WaterfallDialog(
                 WaterfallDialog.__name__,
                 [
+                    self.get_send_modality,
                     self.get_news_step,
                     self.check_news_step,
                     self.result_step
@@ -35,22 +41,58 @@ class ClickbaitDialog(ComponentDialog):
         )
         self.add_dialog(TextPrompt(TextPrompt.__name__))
         self.add_dialog(ConfirmPrompt(ConfirmPrompt.__name__))
+        self.add_dialog(ChoicePrompt(ChoicePrompt.__name__))
+        self.add_dialog(AttachmentPrompt(AttachmentPrompt.__name__))
         self.config = default_config
         self.is_finished = False
+        self.is_photo = False
 
-    async def get_news_step(self, step_context: WaterfallStepContext) -> DialogTurnResult:
+    async def get_send_modality(self, step_context: WaterfallStepContext) -> DialogTurnResult:
         self.is_finished = False
-        await step_context.context.send_activity(Activity(type=ActivityTypes.typing))
         return await step_context.prompt(
-            TextPrompt.__name__,
-            PromptOptions(prompt=MessageFactory.text("Dimmi il titolo dell'articolo")),
+            ChoicePrompt.__name__,
+            PromptOptions(
+                prompt=MessageFactory.text("Come mi invierai il titol?"),
+                choices=[Choice("Foto"), Choice("Testo")]
+            )
         )
 
-    async def check_news_step(self, step_context: WaterfallStepContext) -> DialogTurnResult:
-        step_context.values["title"] = step_context.result
+    async def get_news_step(self, step_context: WaterfallStepContext) -> DialogTurnResult:
+        mode = step_context.result.value
 
+        if mode == "Foto":
+            self.is_photo = True
+            return await step_context.prompt(
+                AttachmentPrompt.__name__,
+                PromptOptions(prompt=MessageFactory.text("Inviami l'immagine"))
+            )
+
+        elif mode == "Testo":
+            await step_context.context.send_activity(Activity(type=ActivityTypes.typing))
+            return await step_context.prompt(
+                TextPrompt.__name__,
+                PromptOptions(prompt=MessageFactory.text("Dimmi il titolo dell'articolo")),
+            )
+
+    async def check_news_step(self, step_context: WaterfallStepContext) -> DialogTurnResult:
+        if self.is_photo:
+            self.is_photo = False
+            contact_ocr = ContactOCR(self.config)
+            print(step_context.result[0])
+            attachment = step_context.result[0]
+            url_attachment = attachment.content_url
+            data = urllib.request.urlretrieve(url_attachment, "attachment")
+            image_data = open("attachment", "rb").read()
+            os.remove("attachment")
+
+            title = contact_ocr.send_request(image_data)
+
+        else:
+            title = step_context.result
+
+        step_context.values["title"] = title
         await step_context.context.send_activity(
-            MessageFactory.text(f"Titolo: \"{step_context.result}\""),
+            MessageFactory.text(f"Titolo: \"{title}\""),
         )
 
         return await step_context.prompt(
