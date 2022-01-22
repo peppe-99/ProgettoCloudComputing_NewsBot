@@ -1,5 +1,5 @@
 from botbuilder.core import ActivityHandler, TurnContext, MessageFactory, UserState, ConversationState, CardFactory
-from botbuilder.schema import ChannelAccount, Activity, ActivityTypes, CardImage
+from botbuilder.schema import ChannelAccount, Activity, ActivityTypes, CardImage, HeroCard
 from help_modules import ContactLUIS, WelcomeUserState, help_function
 from config import DefaultConfig
 import requests
@@ -7,7 +7,6 @@ from threading import Thread
 from dialogs import ClickbaitDialog, DialogHelper, DeleteRegistrationDialog, UpdateRegistrationDialog
 from dialogs import RegistrationDialog
 
-from botbuilder.schema import HeroCard
 
 class NewsBot(ActivityHandler):
     def __init__(self, user_state: UserState, conversation_state: ConversationState, luis_recognizer: ContactLUIS,
@@ -15,11 +14,25 @@ class NewsBot(ActivityHandler):
                  delete_registration_dialog: DeleteRegistrationDialog, update_registration_dialog: UpdateRegistrationDialog):
         self.last_intent = None
         self.HELLO_MESSAGE = "Ciao sono NewsBot. Come posso esserti d\'aiuto?"
-        self.HELP_MESSAGES = ["Sono ancora in fase di sviluppo, per ora ecco cosa posso fare:",
-                              "1 - Fornirti notizie su ciò che desideri. Ad esempio, prova a dire \"Vorrei delle notizie sui vaccini\" oppure \"Ultimi aggiornamenti sul calcio mercato\"",
-                              "2 - Controllare se il titolo di un articolo è clickbait o meno. Ad esempio, prova a dire \"Puoi controllare se questo titolo è clickbait?\" oppure seplicemente \"Clickbait\"",
-                              "3 - Aggiornarti quotidianamente via email sui tuoi interessi. Ad esempio, prova a dire \"Vorrei iscrivermi\" oppure \"Voglio registrarmi\"\n\n"
-                              "In ogni momento puoi cancellare la tua iscrizione, ad esempio dicendo \"elimina l'iscrizione\", oppure modificare i tuoi interessi, ad esempio dicendo \"vorrei cambiare i miei interessi\""]
+        self.HELP_CARD = HeroCard(
+            title="Ecco cosa posso fare per te:",
+            text="1 - Fornirti notizie su ciò che desideri. Ad esempio, dimmi: \"Vorrei delle notizie sulla situazione covid\".\n\n"
+                 "2 - Controlliamo insieme se il titolo di un articolo è clickbait o meno. Ad esempio, prova a dire: \"Puoi controllare se questo titolo è clickbait?\" oppure seplicemente \"Clickbait\".\n\n"
+                 "3 - Puoi anche registrarti al servizio \"Daily-News\" che ti aggiornerà via email ogni giorno con le notizie relative ai tuoi interessi.\n\n"
+                 "4 - Se dimentichi qualcosa basta dirmi: \"Aiutami\" oppure \"Cosa sai fare?\"."
+        )
+        self.WELCOME_CARD = HeroCard(
+            title="Benvenuto su NewsBot!",
+            text="Ciao, sono NewsBot. Usami per ottenere informazioni in qualunque momento dove e quando vuoi!\n\n"
+                 "Ecco cosa posso fare per te:"
+                 "1 - Fornirti notizie su ciò che desideri. Ad esempio, dimmi: \"Vorrei delle notizie sulla situazione covid\".\n\n"
+                 "2 - Controlliamo insieme se il titolo di un articolo è clickbait o meno. Ad esempio, prova a dire: \"Puoi controllare se questo titolo è clickbait?\" oppure seplicemente \"Clickbait\".\n\n"
+                 "3 - Puoi anche registrarti al servizio \"Daily-News\" che ti aggiornerà via email ogni giorno con le notizie relative ai tuoi interessi.\n\n"
+                 "4 - Se dimentichi qualcosa basta dirmi: \"Aiutami\" oppure \"Cosa sai fare?\".\n\n"
+                 "Il Team di NewsBot ricorda che il servizio è ancora in fase di sviluppo.",
+            images=[CardImage(
+                url="https://raw.githubusercontent.com/peppe-99/ProgettoCloudComputing_NewsBot/main/NewsBot/images/welcome_image.jpg")]
+        )
         self.ERROR_MESSAGE = "ops...qualcosa è andato storto :("
         self._user_state = user_state
         self.user_state_accessor = self._user_state.create_property("WelcomeUserState")
@@ -42,7 +55,7 @@ class NewsBot(ActivityHandler):
 
         if not welcome_user_state.did_welcome_user and turn_context.activity.channel_id == "telegram":
             welcome_user_state.did_welcome_user = True
-            await turn_context.send_activity(self.HELLO_MESSAGE)
+            await turn_context.send_activity(MessageFactory.attachment(CardFactory.hero_card(self.WELCOME_CARD)))
 
         if self._luis_recognizer.is_configured:
             try:
@@ -108,11 +121,11 @@ class NewsBot(ActivityHandler):
                     await turn_context.send_activity(self.HELLO_MESSAGE)
 
                 elif self.last_intent == "Aiuto" or self.last_intent == "None":
-                    for message in self.HELP_MESSAGES:
-                        await turn_context.send_activity(message)
+                    await turn_context.send_activity(
+                        MessageFactory.attachment(CardFactory.hero_card(self.HELP_CARD)))
 
             except Exception as exception:
-                await turn_context.send_activity(self.ERROR_MESSAGE)
+                await turn_context.send_activity(str(exception))
                 print(exception)
         else:
             await turn_context.send_activity(self.ERROR_MESSAGE)
@@ -120,27 +133,10 @@ class NewsBot(ActivityHandler):
     async def on_members_added_activity(self, members_added: ChannelAccount, turn_context: TurnContext):
         for member_added in members_added:
             if member_added.id != turn_context.activity.recipient.id:
-                card = HeroCard(
-                    title="Benvenuto su BotNews!",
-                    text="Ciao, sono BotNews usami per ottenere informazionio in qualunque momento dove e quando vuoi !"
-                    "\n\n"
-                    "Per accedere a servizi offerti segui le seguenti istruzioni:"
-                    "\n\n"
-                     "1 - Forniscimi notizie su ciò che desideri. Ad esempio, dimmi: \"Vorrei delle notizie sulla situazione covid\"."
-                     "\n\n"
-                     "2- Controlliamo insieme se il titolo di un articolo è clickbait o meno. Ad esempio, prova a dire: \"Puoi controllare se questo titolo è clickbait?\" oppure seplicemente \"Clickbait\"."
-                    "\n\n"
-                    "3 - Puoi anche registrarti al servizio \"Delay-News\" che ti aggiornerà ogni giorno con le notizie relative alle tue preferenze."
-                    "\n\n"
-                    "4 - Se dimentichi le mie istruzioni basta dirmi: \"Aiuto\"."
-                    "\n\n"
-                    "Il Team di BotNews ricorda che il servizio è ancora in fase di sviluppo.",
-                    images=[CardImage(url="https://user-images.githubusercontent.com/34619485/88335884-a7d4af00-cd51-11ea-8021-75e10a2a53f5.jpg")]
-                )
                 return await turn_context.send_activity(
-                    MessageFactory.attachment(CardFactory.hero_card(card))
+                    MessageFactory.attachment(CardFactory.hero_card(self.WELCOME_CARD))
                 )
-                #await turn_context.send_activity(self.HELLO_MESSAGE)
+                # await turn_context.send_activity(self.HELLO_MESSAGE)
 
     async def send_news(self, context: TurnContext, soggetto_notizia):
         await context.send_activity(Activity(type=ActivityTypes.typing))
