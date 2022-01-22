@@ -1,5 +1,5 @@
 from botbuilder.core import ActivityHandler, TurnContext, MessageFactory, UserState, ConversationState, CardFactory
-from botbuilder.schema import ChannelAccount, Activity, ActivityTypes, CardImage, HeroCard
+from botbuilder.schema import ChannelAccount, Activity, ActivityTypes, CardImage, HeroCard, ReceiptCard
 from help_modules import ContactLUIS, WelcomeUserState, help_function
 from config import DefaultConfig
 import requests
@@ -11,20 +11,23 @@ from dialogs import RegistrationDialog
 class NewsBot(ActivityHandler):
     def __init__(self, user_state: UserState, conversation_state: ConversationState, luis_recognizer: ContactLUIS,
                  clickbait_dialog: ClickbaitDialog, registration_dialog: RegistrationDialog,
-                 delete_registration_dialog: DeleteRegistrationDialog, update_registration_dialog: UpdateRegistrationDialog):
+                 delete_registration_dialog: DeleteRegistrationDialog,
+                 update_registration_dialog: UpdateRegistrationDialog):
         self.last_intent = None
         self.HELLO_MESSAGE = "Ciao sono NewsBot. Come posso esserti d\'aiuto?"
         self.HELP_CARD = HeroCard(
             title="Ecco cosa posso fare per te:",
-            text="1 - Fornirti notizie su ciò che desideri. Ad esempio, dimmi: \"Vorrei delle notizie sulla situazione covid\".\n\n"
-                 "2 - Controlliamo insieme se il titolo di un articolo è clickbait o meno. Ad esempio, prova a dire: \"Puoi controllare se questo titolo è clickbait?\" oppure seplicemente \"Clickbait\".\n\n"
-                 "3 - Puoi anche registrarti al servizio \"Daily-News\" che ti aggiornerà via email ogni giorno con le notizie relative ai tuoi interessi.\n\n"
-                 "4 - Se dimentichi qualcosa basta dirmi: \"Aiutami\" oppure \"Cosa sai fare?\"."
+            text='1 - Fornirti notizie su ciò che desideri. Ad esempio, dimmi: \"Vorrei delle notizie sulla situazione covid\".\n\n'
+                 '2 - Controlliamo insieme se il titolo di un articolo è clickbait o meno. Ad esempio, prova a dire: \"Puoi controllare se questo titolo è clickbait?\" oppure seplicemente \"Clickbait\".\n\n'
+                 '3 - Puoi anche registrarti al servizio \"Daily-News\" che ti aggiornerà via email ogni giorno con le notizie relative ai tuoi interessi.\n\n'
+                 '4 - Se dimentichi qualcosa basta dirmi: \"Aiutami\" oppure \"Cosa sai fare?\".',
+            images=[CardImage(url="https://raw.githubusercontent.com/peppe-99/ProgettoCloudComputing_NewsBot/main/NewsBot/images/help_image.png")]
         )
+
         self.WELCOME_CARD = HeroCard(
             title="Benvenuto su NewsBot!",
             text="Ciao, sono NewsBot. Usami per ottenere informazioni in qualunque momento dove e quando vuoi!\n\n"
-                 "Ecco cosa posso fare per te:"
+                 "Ecco cosa posso fare per te:\n\n"
                  "1 - Fornirti notizie su ciò che desideri. Ad esempio, dimmi: \"Vorrei delle notizie sulla situazione covid\".\n\n"
                  "2 - Controlliamo insieme se il titolo di un articolo è clickbait o meno. Ad esempio, prova a dire: \"Puoi controllare se questo titolo è clickbait?\" oppure seplicemente \"Clickbait\".\n\n"
                  "3 - Puoi anche registrarti al servizio \"Daily-News\" che ti aggiornerà via email ogni giorno con le notizie relative ai tuoi interessi.\n\n"
@@ -55,7 +58,7 @@ class NewsBot(ActivityHandler):
 
         if not welcome_user_state.did_welcome_user and turn_context.activity.channel_id == "telegram":
             welcome_user_state.did_welcome_user = True
-            await turn_context.send_activity(MessageFactory.attachment(CardFactory.hero_card(self.WELCOME_CARD)))
+            return await turn_context.send_activity(MessageFactory.attachment(CardFactory.hero_card(self.WELCOME_CARD)))
 
         if self._luis_recognizer.is_configured:
             try:
@@ -121,8 +124,9 @@ class NewsBot(ActivityHandler):
                     await turn_context.send_activity(self.HELLO_MESSAGE)
 
                 elif self.last_intent == "Aiuto" or self.last_intent == "None":
-                    await turn_context.send_activity(
-                        MessageFactory.attachment(CardFactory.hero_card(self.HELP_CARD)))
+                    return await turn_context.send_activity(
+                        MessageFactory.attachment(CardFactory.hero_card(self.HELP_CARD))
+                    )
 
             except Exception as exception:
                 await turn_context.send_activity(str(exception))
