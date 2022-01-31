@@ -1,3 +1,5 @@
+from enum import Enum
+
 from botbuilder.core import ActivityHandler, TurnContext, MessageFactory, UserState, ConversationState, CardFactory
 from botbuilder.schema import ChannelAccount, Activity, ActivityTypes, CardImage, HeroCard, ReceiptCard
 from help_modules import ContactLUIS, WelcomeUserState, help_function
@@ -21,9 +23,9 @@ class NewsBot(ActivityHandler):
                  '2 - Controlliamo insieme se il titolo di un articolo è clickbait o meno. Ad esempio, prova a dire: \"Puoi controllare se questo titolo è clickbait?\" oppure seplicemente \"Clickbait\".\n\n'
                  '3 - Puoi anche registrarti al servizio \"Daily-News\" che ti aggiornerà via email ogni giorno con le notizie relative ai tuoi interessi.\n\n'
                  '4 - Se dimentichi qualcosa basta dirmi: \"Aiutami\" oppure \"Cosa sai fare?\".',
-            images=[CardImage(url="https://raw.githubusercontent.com/peppe-99/ProgettoCloudComputing_NewsBot/main/NewsBot/images/help_image.png")]
+            images=[CardImage(
+                url="https://raw.githubusercontent.com/peppe-99/ProgettoCloudComputing_NewsBot/main/NewsBot/images/help_image.png")]
         )
-
         self.WELCOME_CARD = HeroCard(
             title="Benvenuto su NewsBot!",
             text="Ciao, sono NewsBot. Usami per ottenere informazioni in qualunque momento dove e quando vuoi!\n\n"
@@ -36,7 +38,10 @@ class NewsBot(ActivityHandler):
             images=[CardImage(
                 url="https://raw.githubusercontent.com/peppe-99/ProgettoCloudComputing_NewsBot/main/NewsBot/images/welcome_image.jpg")]
         )
-        self.ERROR_MESSAGE = "ops...qualcosa è andato storto :("
+        self.ERROR_MESSAGE = "ops...qualcosa è andato storto \U0001F915"
+        self.THANKS_MESSAGE = "Non c'è di che! \U0001F601"
+        self.COMPLIMENTS_MESSAGE = "Aww! Così mi fai arrossire... \U0001F970"
+        self.INSULTS_MESSAGE = "Che cosa ho fatto di male? \U0001F62D"
         self._user_state = user_state
         self.user_state_accessor = self._user_state.create_property("WelcomeUserState")
         self._conversation_state = conversation_state
@@ -111,17 +116,20 @@ class NewsBot(ActivityHandler):
                     result = recognizer_result.entities.get('$instance')
                     result = result.get('SoggettoNotizia')
                     result = result[0]
-                    soggetto_notizia = result.get("text")
-                    print(soggetto_notizia)
-
-                    Thread(
-                        target=help_function.run_async_function,
-                        args=(self.send_news(turn_context, soggetto_notizia),)
-                    ).start()
-                    return
+                    subject = result.get("text")
+                    await self.send_news(turn_context, subject)
 
                 elif self.last_intent == "Saluto":
                     await turn_context.send_activity(self.HELLO_MESSAGE)
+
+                elif self.last_intent == "Grazie":
+                    await turn_context.send_activity(self.THANKS_MESSAGE)
+
+                elif self.last_intent == "Complimento":
+                    await turn_context.send_activity(self.COMPLIMENTS_MESSAGE)
+
+                elif self.last_intent == "Insulto":
+                    await turn_context.send_activity(self.INSULTS_MESSAGE)
 
                 elif self.last_intent == "Aiuto" or self.last_intent == "None":
                     return await turn_context.send_activity(
@@ -137,17 +145,19 @@ class NewsBot(ActivityHandler):
     async def on_members_added_activity(self, members_added: ChannelAccount, turn_context: TurnContext):
         for member_added in members_added:
             if member_added.id != turn_context.activity.recipient.id:
-                return await turn_context.send_activity(
+                await turn_context.send_activity(
                     MessageFactory.attachment(CardFactory.hero_card(self.WELCOME_CARD))
                 )
-                # await turn_context.send_activity(self.HELLO_MESSAGE)
 
-    async def send_news(self, context: TurnContext, soggetto_notizia):
+    async def send_news(self, context: TurnContext, subject):
         await context.send_activity(Activity(type=ActivityTypes.typing))
-        response = requests.get(self._config.NEWS_BY_SUBJECT_FUNCTION_URL, {"subject": soggetto_notizia})
+        response = requests.get(self._config.NEWS_BY_SUBJECT_FUNCTION_URL, {"subject": subject})
         response.raise_for_status()
         news = dict(response.json())
 
-        await context.send_activity(f"Ecco cosa ho trovato riguardo \"{soggetto_notizia}\"")
-        for nome in news.keys():
-            await context.send_activity(nome + "\n\n" + news[nome])
+        if not bool(news):
+            await context.send_activity(f"Non ho trovato nulla riguardo \"{subject}\"")
+        else:
+            await context.send_activity(f"Ecco cosa ho trovato riguardo \"{subject}\"")
+            for name in news.keys():
+                await context.send_activity(name + "\n\n" + news[name])
