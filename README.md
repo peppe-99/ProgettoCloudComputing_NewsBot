@@ -1,2 +1,2 @@
 # ProgettoCloudComputing_NewsBot
-This repository contains the project for the Cloud Computing degree exam ad Università degli Studi di Salerno (Curriculum Cloud Computing)
+This repository is dedicated to the project of the Cloud Computing course. The project consists in a Telegram bot that uses several Microsoft Azure service to help users stay up to date on topics of interest and recognise clickbait articles by their title. The services used are: Azure Function, Azure Bot Service, LUIS, Azure Cosmos DB, Optical Character Recognition (OCR) and Bing Search v7.
